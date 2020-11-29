@@ -1,34 +1,50 @@
 import org.kohsuke.github.*;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.antlr.runtime.misc.Stats.sum;
 
 public class CheckIssueReplyUser {
     public static void main(String[] args) throws IOException {
         //사용자 이름 및 암호를 통해 연결
-        System.out.println("깃허브 연결 시작");
-        String my_personal_token = "b095b738240e2f5ce86ed66596dc52d28c622c65";
+        String my_personal_token = "abcde";
         GitHub github = new GitHubBuilder().withOAuthToken(my_personal_token).build();
-        System.out.println("깃허브 연결 완료");
+        // 깃헙 레포 연결
+        GHRepository ghRepositor = github.getRepository("helloTestRepo");
+
+        // 참여자 저장소 생성
+        Map<String, int[]> participantHashMap = new HashMap<>();
+        // 참여여부 체크
+        for (int issueNum = 1; issueNum < 19; issueNum++) {
+            GHIssue ghIssue = ghRepositor.getIssue(issueNum);
+            PagedIterable<GHIssueComment> ghIssueComments = ghIssue.listComments();
+            for (GHIssueComment ghIssueComment : ghIssueComments) {
+                String participant = ghIssueComment.getUser().getName();
+                if (participantHashMap.containsKey(participant)) {
+
+                    int[] assignments = participantHashMap.get(participant);
+                    assignments[issueNum] = 1;
+                } else {
+
+                    int[] assignments = new int[19];// 초기값 0
+                    assignments[issueNum] = 1;
+                    participantHashMap.put(participant, assignments);
 
 
-        System.out.println("organization get");
-        GHOrganization newGOrganization = organizationClient(github, "KilGithubOrganization");
-        System.out.println("organization get suc");
-        System.out.println("repo get");
-        GHRepository ghRepositor = newGOrganization.getRepository("git-hub-api-test-repo");
-        System.out.println("repo get suc");
+                }
+            }
 
-
-        GHIssue ghIssue = ghRepositor.getIssue(1);
-        PagedIterable<GHIssueComment> ghIssueComments = ghIssue.listComments();
-        for (GHIssueComment ghIssueComment : ghIssueComments) {
-            System.out.println(ghIssueComment.getUser().getName());
         }
-
+        // 참여자 전체 정보 출력
+        participantHashMap.forEach((key, value) -> {
+            float countPercent = (sum(value) * 100) / 18;
+            System.out.print("참여자명: " + key);
+            System.out.println(", 참여율: " + String.format("%.2f", countPercent) + "%");
+        });
 
     }
 
-    static GHOrganization organizationClient(GitHub gitHub, String organizationName) throws IOException {
-        return gitHub.getOrganization(organizationName);
-    }
+
 }
